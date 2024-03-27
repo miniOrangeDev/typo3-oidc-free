@@ -1,25 +1,22 @@
 {
-    "name": "miniorange/miniorange_oidc",
-    "type": "typo3-cms-extension",
-    "description": "Typo3 OAuth / OpenID Connect Single Sign-On SSO extension by miniOrange allows login (Single Sign-On) into Typo3 with Azure AD, Azure B2C, AWS Cognito, Office 365, WSO2, Okta, Salesforce, Discord, Keycloak, Amazon, Twitch, LinkedIn, Invision Community, Slack, Discord, PingFederate, OneLogin or other custom OAuth 2.0 providers. Typo3 OAuth / OIDC Client Login module by miniOrange can be used for authorization and authentication with any OAuth Provider/Server that supports the OAuth 2.0 and OpenID Connect (OIDC) 1.0 standard. Typo3 OAuth / OpenID Connect Single Sign-On SSO provides user authentication with OAuth & OpenID Connect protocol and allows authorized users to login into the Typo3 site. We provide features like Attribute Mapping & Role Mapping which help to map user data returned from your OAuth Provider to Typo3.",
-    "license": "GPL-2.0-or-later",
-    "authors": [
-        {
-            "name": "Miniorange",
-            "role": "developer"
-        }
-    ],
-    "require": {
-        "typo3/cms-core": "^8.7. || ^11."
-    },
-    "autoload": {
-        "psr-4": {
-            "Miniorange\\MiniorangeOidc\\": "Classes",
-            "Miniorange\\Helper\\": "Helper"
-        }
-    },
-    "replace": {
-        "miniorange/miniorange_oidc": "self.version",
-        "typo3-ter/miniorange_oidc": "self.version"
+  "name": "miniorange/miniorange-oidc",
+  "description": "Miniorange OIDC/OAuth (SSO) provides SSO/Login to your TYPO3 site with any OpenID/OAuth Provider (ACTIVE SUPPORT for OpenID/OAuth Provider config). It allows users residing at OAuth Provider to login to your TYPO3 website. We support all known OAuth providers – Google Apps, ADFS, Azure AD/ADB2C, Okta, Salesforce, OneLogin, Bitium, WSO2, NetIQ etc.",
+  "type": "typo3-cms-extension",
+  "license": [
+    "GPL-2.0-or-later"
+  ],
+  "require": {
+    "typo3/cms-core": "^10. || ^11. || ^12."
+  },
+  "version": "1.0.8",
+  "autoload": {
+    "psr-4": {
+      "Miniorange\\Oauth\\": "Classes/"
     }
+  },
+  "extra": {
+    "typo3/cms": {
+      "extension-key": "oauth"
+    }
+  }
 }

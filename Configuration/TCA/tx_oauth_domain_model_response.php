@@ -1,7 +1,7 @@
 <?php
 return [
     'ctrl' => [
-        'title' => 'LLL:EXT:miniorange_oidc/Resources/Private/Language/locallang_db.xlf:tx_miniorangeoidc_domain_model_response',
+        'title' => 'LLL:EXT:oauth/Resources/Private/Language/locallang_db.xlf:tx_oauth_domain_model_response',
         'label' => 'uid',
         'tstamp' => 'tstamp',
         'crdate' => 'crdate',
@@ -17,7 +17,7 @@ return [
             'endtime' => 'endtime',
         ],
         'searchFields' => '',
-        'iconfile' => 'EXT:miniorange_oidc/Resources/Public/Icons/tx_miniorangeoidc_domain_model_response.gif'
+        'iconfile' => 'EXT:oauth/Resources/Public/Icons/tx_oauth_domain_model_response.gif'
     ],
     'interface' => [
         'showRecordFieldList' => 'sys_language_uid, l10n_parent, l10n_diffsource, hidden, ',
@@ -54,8 +54,8 @@ return [
                 'items' => [
                     ['', 0],
                 ],
-                'foreign_table' => 'tx_miniorangeoidc_domain_model_response',
-                'foreign_table_where' => 'AND tx_miniorangeoidc_domain_model_response.pid=###CURRENT_PID### AND tx_miniorangeoidc_domain_model_response.sys_language_uid IN (-1,0)',
+                'foreign_table' => 'tx_oauth_domain_model_response',
+                'foreign_table_where' => 'AND tx_oauth_domain_model_response.pid=###CURRENT_PID### AND tx_oauth_domain_model_response.sys_language_uid IN (-1,0)',
             ],
         ],
         'l10n_diffsource' => [

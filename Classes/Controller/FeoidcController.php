@@ -1,18 +1,15 @@
 <?php
 
-namespace Miniorange\MiniorangeOidc\Controller;
+namespace Miniorange\Oauth\Controller;
 
-use Miniorange\Helper\Constants;
-use Miniorange\Helper\MoUtilities;
-use Miniorange\MiniorangeOidc\Domain\Model\Feoidc;
-use Miniorange\MiniorangeOidc\Domain\Repository\FeoidcRepository;
-
-use PDO;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Core\Database\ConnectionPool;
+use Miniorange\Oauth\Helper\Constants;
+use Miniorange\Oauth\Helper\MoUtilities;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
-use TYPO3\CMS\Extbase\Object\ObjectManager;
-
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use Psr\Http\Message\ResponseInterface;
+use TYPO3\CMS\Extbase\Persistence\Repository;
+use Psr\Http\Message\ResponseFactoryInterface;
+use TYPO3\CMS\Core\Information\Typo3Version;
 
 /**
  * FeoidcController
@@ -20,131 +17,49 @@ use TYPO3\CMS\Extbase\Object\ObjectManager;
 class FeoidcController extends ActionController
 {
 
-    protected $feoidcRepository = null;
-
     /**
-     * 
+     * requestAction
      * @return void
-     * @throws Exception
      */
     public function requestAction()
     {
-        error_log("In FeoidcController : sendRequestAction()");
-       GeneralUtility::makeInstance(\TYPO3\CMS\Core\Cache\CacheManager::class)->flushCaches();
-        
-        if(isset($_GET['RelayState']))
-        {
-            $cookkey="mo_oauth_test";
-            $cookval=true;
-            setcookie($cookkey,$cookval);
-        }
-        $relayState = isset($_REQUEST['RelayState']) ? $_REQUEST['RelayState'] : '/';
-        if ($this->findSubstring($_REQUEST) == 1) {
-            $relayState = 'testconfig';
-        }
+        error_log("Feoidc Controller, inside printAction: ");
+        GeneralUtility::makeInstance(\TYPO3\CMS\Core\Cache\CacheManager::class)->flushCaches();
 
-        $auth_url = $this->createAuthorizationUrl();
-
-        header('Location: ' . $auth_url);
-    }
-
-    /**
-     * @param $request
-     * @return int
-     */
-    private function findSubstring($request)
-    {
-        if (!empty($request["id"]) and strpos($request["id"], 'RelayState') !== false) {
-            return 1;
-        } else {
-            return 0;
-        }
-    }
-
-    private function createAuthorizationUrl(){
-        error_log("In FeoidcConroller : createAuthorizationUrl()");
-
-        $json_object = MoUtilities::fetchFromDb(Constants::OIDC_OIDC_OBJECT,Constants::TABLE_OIDC);
-        $app = isset($json_object) ? json_decode((string)$json_object,true) : array();
-        if(empty($app))
-        {
-            echo "Please configure the plugin first!!!";exit;
-        }
+        $json_object = MoUtilities::fetchFromDb(Constants::OIDC_OIDC_OBJECT, Constants::TABLE_OIDC);
+        $app = json_decode($json_object, true);
         $state = base64_encode($app[Constants::OIDC_APP_NAME]);
         $authorizationUrl = $app[Constants::OIDC_AUTH_URL];
 
-        if(strpos($authorizationUrl, "google") !== false) {
+        if (strpos($authorizationUrl, "google") !== false) {
             $authorizationUrl = "https://accounts.google.com/o/oauth2/auth";
         }
 
-        if(strpos($authorizationUrl, '?' ) !== false)
-            $authorizationUrl = $authorizationUrl."&client_id=".$app[Constants::OIDC_CLIENT_ID]."&scope=".$app[Constants::OIDC_SCOPE]."&redirect_uri=".$app[Constants::OIDC_REDIRECT_URL]."&response_type=code&state=".$state;
+        if (strpos($authorizationUrl, '?') !== false)
+            $authorizationUrl = $authorizationUrl . "&client_id=" . $app[Constants::OIDC_CLIENT_ID] . "&scope=" . $app[Constants::OIDC_SCOPE] . "&redirect_uri=" . $app[Constants::OIDC_REDIRECT_URL] . "&response_type=code&state=" . $state;
         else
-            $authorizationUrl = $authorizationUrl."?client_id=".$app[Constants::OIDC_CLIENT_ID]."&scope=".$app[Constants::OIDC_SCOPE]."&redirect_uri=".$app[Constants::OIDC_REDIRECT_URL]."&response_type=code&state=".$state;
+            $authorizationUrl = $authorizationUrl . "?client_id=" . $app[Constants::OIDC_CLIENT_ID] . "&scope=" . $app[Constants::OIDC_SCOPE] . "&redirect_uri=" . $app[Constants::OIDC_REDIRECT_URL] . "&response_type=code&state=" . $state;
 
-        if(session_id() == '' || !isset($_SESSION))
+        if (session_id() == '' || !isset($_SESSION))
             session_start();
         $_SESSION['oauth2state'] = $state;
         $_SESSION['appname'] = $app[Constants::OIDC_APP_NAME];
 
-       return $authorizationUrl;
-    }
 
-    function testAttrMappingConfig($nestedprefix, $resourceOwnerDetails){
-        error_log("In FeoidcController : testAttrMappingConfig()");
-        foreach($resourceOwnerDetails as $key => $resource){
-            if(is_array($resource) || is_object($resource)){
-                if(!empty($nestedprefix))
-                    $nestedprefix .= ".";
-                $this->testattrmappingconfig($nestedprefix.$key,$resource);
-                $nestedprefix = rtrim($nestedprefix,".");
-            } else {
-                echo "<tr><td>";
-                if(!empty($nestedprefix))
-                    echo $nestedprefix.".";
-                echo $key."</td><td>".$resource."</td></tr>";
-            }
-        }
-    }
-
-    function getNestedAttribute($resource, $key){
-        if($key==="")
-            return "";
-
-        $keys = explode(".",$key);
-        if(sizeof($keys)>1){
-            $current_key = $keys[0];
-            if(isset($resource[$current_key]))
-                return getnestedattribute($resource[$current_key], str_replace($current_key.".","",$key));
+        if (isset($_REQUEST['RelayState']) and $_REQUEST['RelayState'] == 'testconfig') {
+            $_SESSION['mo_oauth_test'] = true;
         } else {
-            $current_key = $keys[0];
-            if(isset($resource[$current_key])) {
-                return $resource[$current_key];
-            }
+            $_SESSION['mo_oauth_test'] = false;
         }
-    }
-
-    function mo_oauth_jkhuiysuayhbw($ejhi)
-    {
-        $option = 0; $flag = false;
-        $mo_oauth_authorizations = get_option('mo_oauth_authorizations');
-        if(!empty($mo_oauth_authorizations))
-            $option = get_option( 'mo_oauth_authorizations' );
-        $user = mo_oauth_hjsguh_kiishuyauh878gs($ejhi);
-        if($user);
-        ++$option;
-        update_option( 'mo_oauth_authorizations', $option);
-        if($option >= 10)
-        {
-            $mo_oauth_set_val = base64_decode('bW9fb2F1dGhfZmxhZw==');
-            update_option($mo_oauth_set_val, true);
+        $version = new Typo3Version();
+        $typo3Version = $version->getVersion();
+        header('Location: ' . $authorizationUrl);
+        if ($typo3Version >= 11.5) {
+            return $this->responseFactory->createResponse()
+                ->withAddedHeader('Content-Type', 'text/html; charset=utf-8')
+                ->withBody($this->streamFactory->createStream($this->view->render()));
         }
-        return $user;
-    }
 
-    function mo_oauth_jhuyn_jgsukaj($temp_var)
-    {
-        return mo_oauth_jkhuiysuayhbw($temp_var);
     }
 
 }

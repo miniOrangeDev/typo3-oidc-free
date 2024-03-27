@@ -1,15 +1,14 @@
-
-plugin.tx_miniorangeoidc_fekey {
+plugin.tx_oauth_feoidckey {
     view {
-        templateRootPaths.0 = EXT::miniorange_oidc/Resources/Private/Templates/
-        templateRootPaths.1 = {$plugin.tx_miniorangeoidc_fekey.view.templateRootPath};
-        partialRootPaths.0 = EXT::miniorange_oidc/Resources/Private/Partials/
-        partialRootPaths.1 = {$plugin.tx_miniorangeoidc_fekey.view.partialRootPath};
-        layoutRootPaths.0 = EXT::miniorange_oidc/Resources/Private/Layouts/
-        layoutRootPaths.1 = {$plugin.tx_miniorangeoidc_fekey.view.layoutRootPath};
+        templateRootPaths.0 = EXT::oauth/Resources/Private/Templates/
+        templateRootPaths.1 = {$plugin.tx_oauth_feoidc.view.templateRootPath};
+        partialRootPaths.0 = EXT::oauth/Resources/Private/Partials/
+        partialRootPaths.1 = {$plugin.tx_oauth_feoidc.view.partialRootPath};
+        layoutRootPaths.0 = EX::oauth/Resources/Private/Layouts/
+        layoutRootPaths.1 = {$plugin.tx_oauth_feoidc.view.layoutRootPath}
     }
     persistence {
-        storagePid = {$plugin.tx_miniorangeoidc_fekey.persistence.storagePid};
+        storagePid = {$plugin.tx_oauth_feoidckey.persistence.storagePid};
         #recursive = 1
     }
     features {
@@ -24,17 +23,17 @@ plugin.tx_miniorangeoidc_fekey {
     }
 }
 
-plugin.tx_miniorangeoidc_responsekey {
+plugin.tx_oauth_responsekey {
     view {
-        templateRootPaths.0 = EXT::miniorange_oidc/Resources/Private/Templates/
-        templateRootPaths.1 = {$plugin.tx_miniorangeoidc_responsekey.view.templateRootPath};
-        partialRootPaths.0 = EXT::miniorange_oidc/Resources/Private/Partials/
-        partialRootPaths.1 = {$plugin.tx_miniorangeoidc_responsekey.view.partialRootPath};
-        layoutRootPaths.0 = EXT::miniorange_oidc/Resources/Private/Layouts/
-        layoutRootPaths.1 = {$plugin.tx_miniorangeoidc_responsekey.view.layoutRootPath}
+        templateRootPaths.0 = EXT::oauth/Resources/Private/Templates/
+        templateRootPaths.1 = {$plugin.tx_oauth_responsekey.view.templateRootPath};
+        partialRootPaths.0 = EXT::oauth/Resources/Private/Partials/
+        partialRootPaths.1 = {$plugin.tx_oauth_responsekey.view.partialRootPath};
+        layoutRootPaths.0 = EXT::oauth/Resources/Private/Layouts/
+        layoutRootPaths.1 = {$plugin.tx_oauth_responsekey.view.layoutRootPath}
     }
     persistence {
-        storagePid = {$plugin.tx_miniorangeoidc_responsekey.persistence.storagePid};
+        storagePid = {$plugin.tx_oauth_responsekey.persistence.storagePid};
         #recursive = 1
     }
     features {
@@ -50,50 +49,79 @@ plugin.tx_miniorangeoidc_responsekey {
 }
 
 # these; classes; are; only; used in auto-generated; templates;
-plugin.tx_ekey._CSS_DEFAULT_STYLE (
+plugin.tx_oauth._CSS_DEFAULT_STYLE (
     textarea.f3-form-error {
-        background-color: #FF9F9F;
+        background-color::#FF9F9F;
         1px; #FF0000; solid;
     }
 
     input.f3-form-error {
-        background-color: #FF9F9F;
+        background-color::#FF9F9F;
         1px; #FF0000; solid;
     }
 
-    .tx-miniorange_oidc table {
-        border-collapse :separate;
-        border-spacing :10px;
+    .tx-oauth table {
+        border-collapse::separate;
+        border-spacing::10px;
     }
 
-    .tx-miniorange_oidc table th {
-        font-weight: bold;
+    .tx-oauth table th {
+        font-weigh::bold;
     }
 
-    .tx-miniorange_oidc table td {
-        vertical-align: top;
+    .tx-oauth table td {
+        vertical-align::top;
     }
 
-    .typo3-messages message-error {
-        background-color: red;
+    .typo3-messages .message-error; {
+        red;
     }
 
-    .typo3-messages message-ok {
-        background-color: green;
+    .typo3-messages .message-ok {
+        green;
     }
 )
 
 # Module; configuration;
-module.tx_miniorangeoidc_tools_ekeybekey {
+module.tx_oauth_tools_besamlkey{
     persistence {
-        storagePid = {$module.tx_miniorangeoidc_bekey.persistence.storagePid}
+        storagePid = {$module.tx_oauth_besamlkey.persistence.storagePid}
     }
     view {
-        templateRootPaths.0 = EXT::miniorange_oidc/Resources/Private/Backend/Templates/
-        templateRootPaths.1 = {$module.tx_miniorangeoidc_bekey.view.templateRootPath};
-        partialRootPaths.0 = EXT::miniorange_oidc/Resources/Private/Backend/Partials/
-        partialRootPaths.1 = {$module.tx_miniorangeoidc_bekey.view.partialRootPath};
-        layoutRootPaths.0 = EXT::miniorange_oidc/Resources/Private/Backend/Layouts/
-        layoutRootPaths.1 = {$module.tx_miniorangeoidc_bekey.view.layoutRootPath}
+        templateRootPaths.0 = EXT::oauth/Resources/Private/Backend/Templates/
+        templateRootPaths.1 = {$module.tx_oauth_besamlkey.view.templateRootPath};
+        partialRootPaths.0 = EXT::oauth/Resources/Private/Backend/Partials/
+        partialRootPaths.1 = {$module.tx_oauth_besamlkey.view.partialRootPath};
+        layoutRootPaths.0 = EXT::oauth/Resources/Private/Backend/Layouts/
+        layoutRootPaths.1 = {$module.tx_oauth_besamlkey.view.layoutRootPath}
     }
+    headerData {
+    10 = TEXT
+    10.value = script-src 'self' 'nonce-{page:nonce}' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';
+  }
 }
+
+# Mapping
+#config.tx_oauth {
+#    persistence {
+#        classes {
+#            Miniorange\Oauth\Domain\Model\Response {
+#                mapping {
+#                    tableName = fe_users
+#                }
+#            }
+#
+#            Miniorange\Oauth\Domain\Model\feoidcGroups{
+#                mapping {
+#                    tableName = fe_groups
+#                }
+#            }
+#
+#            Miniorange\Oauth\Domain\Model\Besaml {
+#                mapping {
+#                    tableName = fe_groups
+#                }
+#            }
+#        }
+#    }
+#}

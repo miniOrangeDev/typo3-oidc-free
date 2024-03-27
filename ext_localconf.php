@@ -1,32 +1,49 @@
 <?php
 
+defined('TYPO3') or die();
+
 use TYPO3\CMS\Core\Imaging\IconProvider\BitmapIconProvider;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Utility\ExtensionUtility;
+use TYPO3\CMS\Core\Information\Typo3Version;
 
-defined('TYPO3_MODE') || die('Access denied.');
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['features']['security.backend.enforceContentSecurityPolicy'] = false;
+$GLOBALS['TYPO3_CONF_VARS']['FE']['cacheHash']['enforceValidation'] = false;
+$GLOBALS['TYPO3_CONF_VARS']['FE']['cacheHash']['excludedParameters'] = ['idp_name', 'RelayState', 'option', 'SAMLRequest', 'SAMLResponse', 'SigAlg', 'Signature', 'type', 'app', 'code', 'state'];
 
 call_user_func(
-    function()
-    {
-
+    function () {
+        $pluginNameBeoidc = "Beoidc";
         $pluginNameFeoidc = 'Feoidc';
-         $pluginNameResponse = 'Response';
-
-        if (version_compare(TYPO3_version, '10.0.0', '>=')) {
-            $extensionName = 'MiniorangeOidc';
-            $cache_actions_feoidc = [Miniorange\MiniorangeOidc\Controller\FeoidcController::class => 'request'];
-            $non_cache_actions_feoidc = [Miniorange\MiniorangeOidc\Controller\FeoidcController::class => 'control'];
-            $cache_actions_response = [Miniorange\MiniorangeOidc\Controller\ResponseController::class => 'response'];
-            
-        }else{
-            $extensionName = 'Miniorange.MiniorangeOidc';
-            $cache_actions_feoidc = [ 'Feoidc' => 'request' ];
-            $non_cache_actions_feoidc = [ 'Feoidc' => 'control' ];
-            $cache_actions_response = [ 'Response' => 'response' ];
+        $pluginNameResponse = 'Response';
+        $pluginNameLogout = 'Logout';
+        $version = new Typo3Version();
+        if (version_compare($version, '10.0.0', '>=')) {
+            $extensionName = 'oauth';
+            $cache_actions_beoidc = [Miniorange\Oauth\Controller\BeoidcController::class => 'request'];
+            $cache_actions_feoidc = [Miniorange\Oauth\Controller\FeoidcController::class => 'request'];
+            $non_cache_actions_feoidc = [Miniorange\Oauth\Controller\FeoidcController::class => 'control'];
+            $cache_actions_response = [Miniorange\Oauth\Controller\ResponseController::class => 'response'];
+            $cache_actions_logout = [Miniorange\Oauth\Controller\LogoutController::class => 'logout'];
+        } else {
+            $extensionName = 'miniorange.oauth';
+            $cache_actions_beoidc = ['Beoidc' => 'request'];
+            $cache_actions_feoidc = ['Feoidc' => 'request'];
+            $non_cache_actions_feoidc = ['Feoidc' => 'control'];
+            $cache_actions_response = ['Response' => 'response'];
+            $cache_actions_logout = ['Logout' => 'logout'];
         }
-        ExtensionUtility::configurePlugin(
+
+        \TYPO3\CMS\Extbase\Utility\ExtensionUtility::configurePlugin(
+            $extensionName,
+            $pluginNameBeoidc,
+            [
+                'Beoidc' => 'request',
+            ]
+        );
+
+        \TYPO3\CMS\Extbase\Utility\ExtensionUtility::configurePlugin(
             $extensionName,
             $pluginNameFeoidc,
             $cache_actions_feoidc,
@@ -34,33 +51,40 @@ call_user_func(
             $non_cache_actions_feoidc
         );
 
-        ExtensionUtility::configurePlugin(
+        \TYPO3\CMS\Extbase\Utility\ExtensionUtility::configurePlugin(
             $extensionName,
             $pluginNameResponse,
             $cache_actions_response
         );
-        
+
+        \TYPO3\CMS\Extbase\Utility\ExtensionUtility::configurePlugin(
+            $extensionName,
+            $pluginNameLogout,
+            $cache_actions_logout
+        );
+
+
         // wizards
-        ExtensionManagementUtility::addPageTSConfig(
+        \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addPageTSConfig(
             'mod {
             wizards.newContentElement.wizardItems.plugins {
                 elements {
                     Feoidckey {
-                        iconIdentifier = miniorange_oidc-plugin-feoidc
-                        title = LLL:EXT:miniorange_oidc/Resources/Private/Language/locallang_db.xlf:tx_MiniorangeOidc_feoidc.name
-                        description = LLL:EXT:miniorange_oidc/Resources/Private/Language/locallang_db.xlf:tx_MiniorangeOidc_feoidc.description
+                        iconIdentifier = oauth-plugin-feoidc
+                        title = LLL:EXT:oauth/Resources/Private/Language/locallang_db.xlf:tx_oauth_feoidc.name
+                        description = LLL:EXT:oauth/Resources/Private/Language/locallang_db.xlf:tx_oauth_feoidc.description
                         tt_content_defValues {
                             CType = list
-                            list_type = feoidc
+                            list_type = Feoidc
                         }
                     }
                     Responsekey {
-                        iconIdentifier = miniorange_oidc-plugin-response
-                        title = LLL:EXT:miniorange_oidc/Resources/Private/Language/locallang_db.xlf:tx_MiniorangeOidc_response.name
-                        description = LLL:EXT:miniorange_oidc/Resources/Private/Language/locallang_db.xlf:tx_MiniorangeOidc_response.description
+                        iconIdentifier = oauth-plugin-response
+                        title = LLL:EXT:oauth/Resources/Private/Language/locallang_db.xlf:tx_oauth_response.name
+                        description = LLL:EXT:oauth/Resources/Private/Language/locallang_db.xlf:tx_oauth_response.description
                         tt_content_defValues {
                             CType = list
-                            list_type = response
+                            list_type = Response
                         }
                     }
                 }
@@ -71,14 +95,25 @@ call_user_func(
 
         $iconRegistry = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Imaging\IconRegistry::class);
         $iconRegistry->registerIcon(
-            'miniorange_oidc-plugin-feoidc',
+            'oauth-plugin-feoidc',
             \TYPO3\CMS\Core\Imaging\IconProvider\BitmapIconProvider::class,
-            ['source' => 'EXT:miniorange_oidc/Resources/Public/Icons/miniorange.png']
+            ['source' => 'EXT:oauth/Resources/Public/Icons/miniorange.png']
         );
         $iconRegistry->registerIcon(
-            'miniorange_oidc-plugin-response',
+            'oauth-plugin-response',
             \TYPO3\CMS\Core\Imaging\IconProvider\BitmapIconProvider::class,
-            ['source' => 'EXT:miniorange_oidc/Resources/Public/Icons/miniorange.png']
+            ['source' => 'EXT:oauth/Resources/Public/Icons/miniorange.png']
         );
+        $iconRegistry->registerIcon(
+            'oauth-plugin-logout',
+            \TYPO3\CMS\Core\Imaging\IconProvider\BitmapIconProvider::class,
+            ['source' => 'EXT:oauth/Resources/Public/Icons/miniorange.png']
+        );
+        $iconRegistry->registerIcon(
+            'oauth-plugin-bekey',
+            \TYPO3\CMS\Core\Imaging\IconProvider\BitmapIconProvider::class,
+            ['source' => 'EXT:oauth/Resources/Public/Icons/miniorange.png']
+        );
+
     }
 );

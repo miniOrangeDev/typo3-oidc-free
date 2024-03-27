@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <xliff version="1.0">
-	<file source-language="en" datatype="plaintext" original="messages" date="2019-05-10T08:29:02Z" product-name="miniorange_oidc">
+	<file source-language="en" datatype="plaintext" original="messages" date="2019-05-10T08:29:02Z" product-name="oauth">
 		<header/>
 		<body>
-			<trans-unit id="tx_miniorangeoidc_domain_model_feoidc">
+			<trans-unit id="tx_oauth_domain_model_feoidc">
 				<source>Feoidc</source>
 			</trans-unit>
-			<trans-unit id="tx_miniorangeoidc_domain_model_beoidc">
+			<trans-unit id="tx_oauth_domain_model_beoidc">
 				<source>Beoidc</source>
 			</trans-unit>
-			<trans-unit id="tx_miniorangeoidc_domain_model_response">
+			<trans-unit id="tx_oauth_domain_model_response">
 				<source>Response</source>
 			</trans-unit>
 		</body>

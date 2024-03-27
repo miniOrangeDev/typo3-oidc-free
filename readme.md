@@ -11,3 +11,8 @@ v1.0.4
  - Typo3 v11.5.27 compatibility
  - Security improvements
  - UI updates
+
+v1.0.6
+ - Typo3 v10, v11 and v12 compatibility
+ - Security improvements
+ - Updated UI

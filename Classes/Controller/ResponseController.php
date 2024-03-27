@@ -1,51 +1,50 @@
 <?php
 
+namespace Miniorange\Oauth\Controller;
 
-namespace Miniorange\MiniorangeOidc\Controller;
-
-use Miniorange\Helper\Constants;
-use Miniorange\Helper\MoUtilities;
-use Miniorange\Helper\Utilities;
-use Miniorange\Helper\OAuthHandler;
-use Miniorange\MiniorangeOidc\Domain\Repository\ResponseRepository;
-use Miniorange\Helper\Actions\TestResultActions;
+use Miniorange\Oauth\Helper\Constants;
+use Miniorange\Oauth\Helper\MoUtilities;
+use Miniorange\Oauth\Helper\OAuthHandler;
+use Miniorange\Oauth\Helper\Utilities;
+use Miniorange\Oauth\Helper\Actions\TestResultActions;
+use PDO;
 
 use ReflectionClass;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Database\ConnectionPool;
-use \TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
+use TYPO3\CMS\Core\Utility\HttpUtility;
+use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use TYPO3\CMS\Felogin\Controller\FrontendLoginController;
 use TYPO3\CMS\Extbase\Domain\Model\FrontendUser;
 use TYPO3\CMS\Extbase\Domain\Repository\FrontendUserRepository;
-use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
+use TYPO3\CMS\Core\Information\Typo3Version;
+use Psr\Http\Message\ResponseInterface;
+use TYPO3\CMS\Extbase\Persistence\Repository;
+use Psr\Http\Message\ResponseFactoryInterface;
+use Miniorange\Oauth\Helper\CustomerMo;
 
 /**
  * ResponseController
  */
 class ResponseController extends ActionController
 {
-    private $first_name = null;
-    private $last_name = null;
     protected $persistenceManager = null;
     protected $frontendUserRepository = null;
+    private $first_name = null;
+    private $last_name = null;
+    private $attrsReceived = null;
+    private $amObject = null;
     private $ses_id = null;
 
-    function testattrmappingconfig($nestedprefix, $resourceOwnerDetails){
-        error_log("In ResponseController : testattrmappingconfig()");
-        foreach($resourceOwnerDetails as $key => $resource){
-            if(is_array($resource) || is_object($resource)){
-                if(!empty($nestedprefix))
-                    $nestedprefix .= ".";
-                $this->testattrmappingconfig($nestedprefix.$key,$resource);
-                $nestedprefix = rtrim($nestedprefix,".");
-            } else {
-                echo "<tr><td>";
-                if(!empty($nestedprefix))
-                    echo $nestedprefix.".";
-                echo $key."</td><td>".$resource."</td></tr>";
-            }
-        }
-    }
+    private $ssoemail = null;
+
+    private $username = "";
+
+    private $callbackUrl = "";
+
+    private $sesAccessToken = null;
+
+
     /**
      * action check
      *
@@ -54,21 +53,22 @@ class ResponseController extends ActionController
     public function responseAction()
     {
         error_log("In reponseController: checkAction() ");
+        $version = new Typo3Version();
+        $typo3Version = $version->getVersion();
 
-       GeneralUtility::makeInstance(\TYPO3\CMS\Core\Cache\CacheManager::class)->flushCaches();
-       if (array_key_exists('logintype', $_REQUEST) && $_REQUEST['logintype'] == 'logout') {
-        error_log("Logout intercepted.");
-        $this->logout();
-        $logoutUrl = $this->request->getBaseUri();
-        header('Location: '.$logoutUrl);
-       }
-       else if (strpos($_SERVER['REQUEST_URI'], "/oauthcallback") !== false || isset($_GET['code'])) {
+        GeneralUtility::makeInstance(\TYPO3\CMS\Core\Cache\CacheManager::class)->flushCaches();
+        if (array_key_exists('logintype', $_REQUEST) && $_REQUEST['logintype'] == 'logout') {
+            error_log("Logout intercepted.");
+            $this->logout($typo3Version);
+            $logoutUrl = $this->request->getBaseUri();
+            header('Location: ' . $logoutUrl);
+        } else if (strpos($_SERVER['REQUEST_URI'], "/oauthcallback") !== false || isset($_GET['code'])) {
             if (session_id() == '' || !isset($_SESSION))
                 session_start();
 
-                error_log("session started".print_r($_SERVER,true));
+            error_log("session started" . print_r($_SERVER, true));
 
-            error_log("code: ".print_r($_GET,true));
+            error_log("code: " . print_r($_GET, true));
             if (!isset($_GET['code'])) {
                 if (isset($_GET['error_description']))
                     exit($_GET['error_description']);
@@ -91,10 +91,9 @@ class ResponseController extends ActionController
                     }
 
                     $username_attr = "";
-                    $oidc_object = MoUtilities::fetchFromDb('oidc_object', Constants::TABLE_OIDC);
+                    $oidc_object = MoUtilities::fetchFromDb(Constants::OIDC_OIDC_OBJECT, Constants::TABLE_OIDC);
                     $currentapp = isset($oidc_object) ? json_decode((string)$oidc_object, true) : array();
-
-                    if(!$currentapp)
+                    if (!$currentapp)
                         exit('Application not configured.');
 
                     $mo_oauth_handler = new OAuthHandler();
@@ -106,9 +105,8 @@ class ResponseController extends ActionController
 
                     if (isset($currentapp['app_type']) && $currentapp['app_type'] == Constants::TYPE_OPENID_CONNECT) {
                         // OpenId connect
-
                         $relayStateUrl = array_key_exists('RelayState', $_REQUEST) ? $_REQUEST['RelayState'] : '/';
-                        error_log("relaystate in response: ".$relayStateUrl);
+                        error_log("relaystate in response: " . $relayStateUrl);
                         $tokenResponse = $mo_oauth_handler->getIdToken($currentapp['token_endpoint'],
                             'authorization_code',
                             $currentapp['client_id'],
@@ -125,26 +123,26 @@ class ResponseController extends ActionController
                             exit('Invalid token received.');
                         else
                             $resourceOwner = $mo_oauth_handler->getResourceOwnerFromIdToken($idToken);
-        
-                            if(isset($resourceOwner['email']))
+
+                        if (isset($resourceOwner['email']))
                             $resourceOwner['NameID'] = ['0' => $resourceOwner['email']];
-                            else
+                        else
                             $resourceOwner['NameID'] = ['0' => $this->findUserEmail($resourceOwner)];
 
                     } else {
-                        // echo "OAuth";
+                        //OAuth Flow
                         $accessTokenUrl = $currentapp['token_endpoint'];
                         if (strpos($accessTokenUrl, "google") !== false) {
                             $accessTokenUrl = "https://www.googleapis.com/oauth2/v4/token";
                         }
                         $accessToken = $mo_oauth_handler->getAccessToken($accessTokenUrl,
-                           'authorization_code',
-                           $currentapp['client_id'],
-                           $currentapp['client_secret'],
-                           $_GET['code'],
-                           $currentapp['redirect_url'],
-                           $currentapp['set_header_credentials'],
-                           $currentapp['set_body_credentials']
+                            'authorization_code',
+                            $currentapp['client_id'],
+                            $currentapp['client_secret'],
+                            $_GET['code'],
+                            $currentapp['redirect_url'],
+                            $currentapp['set_header_credentials'],
+                            $currentapp['set_body_credentials']
                         );
                         if (!$accessToken)
                             exit('Invalid token received.');
@@ -164,23 +162,31 @@ class ResponseController extends ActionController
                     $nameId = $this->findUserEmail($resourceOwner);
                     $this->nameId = $nameId;
                     //TEST Configuration
-                    if (isset($_COOKIE['mo_oauth_test']) && $_COOKIE['mo_oauth_test']) {
+                    if (isset($_SESSION['mo_oauth_test']) && $_SESSION['mo_oauth_test']) {
                         echo '<div style="font-family:Calibri;padding:0 3%;">';
                         echo '<style>table{border-collapse:collapse;}th {background-color: #eee; text-align: center; padding: 8px; border-width:1px; border-style:solid; border-color:#212121;}tr:nth-child(odd) {background-color: #f2f2f2;} td{padding:8px;border-width:1px; border-style:solid; border-color:#212121;}</style>';
-                        (new TestResultActions($resourceOwner, $nameId))->execute();
-                        setcookie('mo_oauth_test',false);
-                        exit();
+                        echo "<h2>Test Configuration</h2><table><tr><th>Attribute Name</th><th>Attribute Value</th></tr>";
+                        Utilities::testAttrMappingConfig("", $resourceOwner);
+                        echo "</table>";
+                        echo '<div style="padding: 10px;"></div><input style="padding:1%;width:100px;background: #0091CD none repeat scroll 0% 0%;cursor: pointer;font-size:15px;border-width: 1px;border-style: solid;border-radius: 3px;white-space: nowrap;box-sizing: border-box;border-color: #0073AA;box-shadow: 0px 1px 0px rgba(120, 200, 230, 0.6) inset;color: #FFF;"type="button" value="Done" onClick="self.close();"></div>';
+                        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(Constants::TABLE_OIDC);
+                        $configurations = $queryBuilder->select(Constants::OIDC_OIDC_OBJECT)->from(Constants::TABLE_OIDC)->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter(1, PDO::PARAM_INT)))->execute()->fetch();
+                        $configurations = $configurations[Constants::OIDC_OIDC_OBJECT];
+                        $this->status = Utilities::isBlank($resourceOwner) ? 'Test Failed' : 'Test SuccessFull';
+                        $customer = new CustomerMo();
+                        $customer->submit_to_magento_team_core_config_data($this->status, $resourceOwner, $configurations);
+                        exit($_SESSION['mo_oauth_test'] = false);
                     }
                     $am_username = MoUtilities::fetchFromDb(Constants::OIDC_ATTRIBUTE_USERNAME, Constants::TABLE_OIDC);
-                    if (isset( $am_username) &&  $am_username != "") {
+                    if (isset($am_username) && $am_username != "") {
                         $username_attr = $am_username;
                     } else {
-                        exit("Attribute Mapping not configured.");
+                        exit("Attribute Mapping not configured. Please contact your Administrator!");
                     }
 
                     if (!empty($username_attr))
                         $username = $this->getnestedattribute($resourceOwner, $username_attr);
-                    
+
                     if (empty($username) || "" === $username)
                         exit('Username not received. Check your <b>Attribute Mapping</b> configuration.');
                     if (!is_string($username['0'])) {
@@ -191,14 +197,11 @@ class ResponseController extends ActionController
                     exit($e->getMessage());
                 }
             }
-            if(is_array($username))
-            $this->login_user($username['0']);
+            if (is_array($username))
+                $this->login_user($username['0'], $typo3Version);
             else
-            $this->login_user($username);
-        }
-
-
-        else if (isset($_REQUEST['option']) and strpos($_REQUEST['option'], 'mooauth') !== false) {
+                $this->login_user($username, $typo3Version);
+        } else if (isset($_REQUEST['option']) and strpos($_REQUEST['option'], 'mooauth') !== false) {
             //do stuff after returning from oAuth processing
             $access_token = $_POST['access_token'];
             $token_type = $_POST['token_type'];
@@ -206,83 +209,15 @@ class ResponseController extends ActionController
             if (array_key_exists('email', $_POST))
                 $user_email = $_POST['email'];
 
-            $this->login_user($user_email);
+            $this->login_user($user_email, $typo3Version);
         }
-    }
 
-
-    function login_user($username){
-
-        error_log("In ResponseController : login_user()");
-        
-        $GLOBALS['TSFE']->fe_user->checkPid = 0;
-        $info = $GLOBALS['TSFE']->fe_user->getAuthInfoArray();
-        $user = Utilities::fetchUserFromUsername($username);
-        if ($user == null) {
-            $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(Constants::TABLE_OIDC);
-            $count = $queryBuilder->select('countuser')->from(Constants::TABLE_OIDC)->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter(1, \PDO::PARAM_INT)))->execute()->fetchColumn(0);
-            if($count>0)
-            {
-                $queryBuilder->update(Constants::TABLE_OIDC)->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter(1, \PDO::PARAM_INT)))->set('countuser', $count-1)->execute();
-                $user = $this->create($username);
-            }
-            else{
-                echo "Auto create user limit exceeded...Please upgrade to the premium version";exit;
-            }
-            $user = Utilities::fetchUserFromUsername($username);
+        if ($typo3Version >= 11.5) {
+            return $this->responseFactory->createResponse()
+                ->withAddedHeader('Content-Type', 'text/html; charset=utf-8')
+                ->withBody($this->streamFactory->createStream($this->view->render()));
         }
-        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('fe_sessions');
 
-        $queryBuilder->delete('fe_sessions')->where($queryBuilder->expr()->eq('ses_userid',$queryBuilder->createNamedParameter($user['uid'], \PDO::PARAM_INT)))->execute();
-        //$queryBuilder->delete('fe_sessions')->where($queryBuilder->expr()->eq('ses_userid',$queryBuilder->createNamedParameter($user['uid'], \PDO::PARAM_INT)))->executeStatement();   
-
-        $GLOBALS['TSFE']->fe_user->forceSetCookie = TRUE;
-        $GLOBALS['TSFE']->fe_user->loginUser = 1;
-        $GLOBALS['TSFE']->fe_user->start();
-        $GLOBALS['TSFE']->fe_user->createUserSession($user);
-        $GLOBALS['TSFE']->initUserGroups();
-        $GLOBALS['TSFE']->fe_user->loginSessionStarted = TRUE;
-        $GLOBALS['TSFE']->fe_user->user = $user;
-        $GLOBALS['TSFE']->fe_user->setKey('user', 'fe_typo_user', $user);
-        $GLOBALS['TSFE']->fe_user->setKey('ses', 'fe_typo_user', $user);
-        $GLOBALS['TSFE']->fe_user->user = $GLOBALS['TSFE']->fe_user->fetchUserSession();
-        $GLOBALS['TSFE']->fe_user->setAndSaveSessionData('user', TRUE);
-        $this->ses_id = $GLOBALS['TSFE']->fe_user->fetchUserSession();
-        $reflection = new ReflectionClass($GLOBALS['TSFE']->fe_user);
-        $setSessionCookieMethod = $reflection->getMethod('setSessionCookie');
-        $setSessionCookieMethod->setAccessible(TRUE);
-        $setSessionCookieMethod->invoke($GLOBALS['TSFE']->fe_user);
-        $GLOBALS['TYPO3_CONF_VARS']['SVCONF']['auth']['setup']['FE_alwaysFetchUser'] = true;
-        $GLOBALS['TYPO3_CONF_VARS']['SVCONF']['auth']['setup']['FE_alwaysAuthUser'] = true;
-        $GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['felogin']['login_confirmed'] = true;
-        $GLOBALS['TSFE']->fe_user->storeSessionData();
-        $test = $GLOBALS['TSFE']->fe_user->user;
-        if (!isset($_SESSION)) {
-            session_id('email');
-            session_start();
-        }
-        $_SESSION['ses_id'] = $user['uid'];
-    }
-
-
-    function getnestedattribute($resource, $key){
-        error_log("In ResponseController : getnestedattribute()");
-        if($key==="")
-            return "";
-
-        $keys = explode(".",$key);
-
-        if(sizeof($keys)>1){
-            $current_key = $keys[0];
-            if(isset($resource[$current_key]))
-                return getnestedattribute($resource[$current_key], str_replace($current_key.".","",$key));
-        } else {
-            $current_key = $keys[0];
-            if(isset($resource[$current_key])) {
-                return $resource[$current_key];
-            }
-        }
-        return null;
     }
 
     /**
@@ -291,49 +226,18 @@ class ResponseController extends ActionController
      * @return string
      * @throws \Exception
      */
-    function logout()
+    public function logout($typo3Version)
     {
-        error_log("In ResponseController : logout()");
+        error_log("Responsecontroller: inside logout");
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('fe_sessions');
-        if(isset($_SESSION['ses_id']))
-        {
-                //$queryBuilder->delete('fe_sessions')->where($queryBuilder->expr()->eq('ses_userid',$queryBuilder->createNamedParameter($_SESSION['ses_id'], \PDO::PARAM_INT)))->executeStatement();
-                $queryBuilder->delete('fe_sessions')->where($queryBuilder->expr()->eq('ses_userid',$queryBuilder->createNamedParameter($_SESSION['ses_id'], \PDO::PARAM_INT)))->execute();
+        if ($typo3Version >= 11.0) {
+            if (isset($_SESSION['ses_id']))
+                $queryBuilder->delete('fe_sessions')->where($queryBuilder->expr()->eq('ses_userid', $queryBuilder->createNamedParameter($_SESSION['ses_id'], \PDO::PARAM_INT)))->executeStatement();
+        } else {
+            if (isset($_SESSION['ses_id']))
+                $queryBuilder->delete('fe_sessions')->where($queryBuilder->expr()->eq('ses_userid', $queryBuilder->createNamedParameter($_SESSION['ses_id'], \PDO::PARAM_INT)))->execute();
         }
-    }
 
-	/**
-	 * @param $username
-	 * @return FrontendUser
-	 */
-    function create($username)
-    {
-        $this->objectManager = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance('TYPO3\\CMS\\Extbase\\Object\\ObjectManager');
-
-        $objectManager = GeneralUtility::makeInstance('TYPO3\\CMS\\Extbase\\Object\\ObjectManager');
-        $frontendUser = new FrontendUser();
-        $frontendUser->setUsername($username);
-        if (filter_var($username, FILTER_VALIDATE_EMAIL))
-        {
-            $fname_lname = explode('@',$username);
-            $first_name = $fname_lname['0'];
-            $last_name = $fname_lname['1'];
-            $frontendUser->setFirstName($first_name);
-            $frontendUser->setLastName($last_name);
-            $frontendUser->setEmail($username);
-        }
-        $frontendUser->setPassword('demouser');
-        $mappedGroupUid = Utilities::fetchUidFromGroupName(Utilities::fetchFromTable(Constants::COLUMN_GROUP_DEFAULT,Constants::TABLE_OIDC));
-        $userGroup = $this->objectManager->get('TYPO3\\CMS\\Extbase\\Domain\\Repository\\FrontendUserGroupRepository')->findByUid($mappedGroupUid);
-
-        if(isset($userGroup))
-        $frontendUser->addUsergroup($userGroup);
-        else
-        exit("Group not assigned...Please contact your Administrator!");
-
-        $this->frontendUserRepository = $objectManager->get('TYPO3\\CMS\\Extbase\\Domain\\Repository\\FrontendUserRepository')->add($frontendUser);
-        $this->persistenceManager = $objectManager->get('TYPO3\\CMS\\Extbase\\Persistence\\Generic\\PersistenceManager')->persistAll();
-        return $frontendUser;
     }
 
     function findUserEmail($arr)
@@ -343,17 +247,129 @@ class ResponseController extends ActionController
             foreach ($arr as $value) {
                 if (is_array($value) && !empty($value)) {
                     return $this->findUserEmail($value);
-                }
-                elseif(isset($value) && !empty($value) && $value!=null){
+                } elseif (isset($value) && !empty($value) && $value != null) {
                     if (filter_var($value, FILTER_VALIDATE_EMAIL)) {
                         return $value;
                     }
-                }
-                else
-                {
+                } else {
                     error_log("null parameter");
                 }
             }
         }
     }
+
+    function getNestedAttribute($resource, $key)
+    {
+        if ($key === "")
+            return "";
+
+        $keys = explode(".", $key);
+        if (sizeof($keys) > 1) {
+            $current_key = $keys[0];
+            if (isset($resource[$current_key]))
+                return $this->getNestedAttribute($resource[$current_key], str_replace($current_key . ".", "", $key));
+        } else {
+            $current_key = $keys[0];
+            if (isset($resource[$current_key])) {
+                return $resource[$current_key];
+            }
+        }
+    }
+
+    function login_user($username, $typo3Version)
+    {
+
+        $GLOBALS['TSFE']->fe_user->checkPid = 0;
+        $user = MoUtilities::fetchUserFromUsername($username);
+        $this->createOrUpdateUser($user, $username, $typo3Version);
+        $user = MoUtilities::fetchUserFromUsername($username);
+        $_SESSION['ses_id'] = $user['uid'];
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('fe_sessions');
+
+        if ($typo3Version >= 11.0) {
+            $queryBuilder->delete('fe_sessions')->where($queryBuilder->expr()->eq('ses_userid', $queryBuilder->createNamedParameter($user['uid'], \PDO::PARAM_INT)))->executeStatement();
+        } else {
+            $queryBuilder->delete('fe_sessions')->where($queryBuilder->expr()->eq('ses_userid', $queryBuilder->createNamedParameter($user['uid'], \PDO::PARAM_INT)))->execute();
+        }
+
+        $GLOBALS['TSFE']->fe_user->forceSetCookie = TRUE;
+
+        $GLOBALS['TSFE']->fe_user->createUserSession($user);
+        $GLOBALS['TSFE']->initUserGroups();
+        $GLOBALS['TSFE']->fe_user->loginSessionStarted = TRUE;
+        $GLOBALS['TSFE']->fe_user->user = $user;
+        $GLOBALS['TSFE']->fe_user->loginSessionStarted = true;
+        $reflection = new ReflectionClass($GLOBALS['TSFE']->fe_user);
+        $setSessionCookieMethod = $reflection->getMethod('setSessionCookie');
+        $setSessionCookieMethod->setAccessible(TRUE);
+        $setSessionCookieMethod->invoke($GLOBALS['TSFE']->fe_user);
+        $GLOBALS['TYPO3_CONF_VARS']['SVCONF']['auth']['setup']['FE_alwaysFetchUser'] = true;
+        $GLOBALS['TYPO3_CONF_VARS']['SVCONF']['auth']['setup']['FE_alwaysAuthUser'] = true;
+        $GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['felogin']['login_confirmed'] = true;
+        $test = $GLOBALS['TSFE']->fe_user->user;
+        if (!isset($_SESSION)) {
+            session_id('email');
+            session_start();
+        }
+    }
+
+    /**
+     * @param $user
+     * @return bool
+     */
+    public function createOrUpdateUser($user, $username, $typo3Version)
+    {
+        $userExist = false;
+        if ($user == null) {
+            if ($this->amObject[Constants::EXISTING_USERS_ONLY] == 'true') {
+                error_log('New user is not allowed to register. Please disable only existing user option.');
+                exit("New users are not allowed to register or login.");
+            } else {
+                $userCount = Utilities::fetchFromTable(Constants::COUNTUSER, Constants::TABLE_OIDC);
+                if ($userCount > 0) {
+                    error_log("CREATING USER" . $username);
+                    $newUser = [
+                        'username' => $username,
+                        'password' => MoUtilities::generateRandomAlphanumericValue(10), // You may want to hash the password using TYPO3's encryption functions
+                        // Add other necessary fields
+                    ];
+
+                    // Insert the new user into the fe_users table
+                    $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(Constants::TABLE_FE_USERS);
+                    $queryBuilder
+                        ->insert(Constants::TABLE_FE_USERS)
+                        ->values($newUser)
+                        ->execute();
+
+                    // Output the UID of the newly created user
+                    $uid = $queryBuilder->getConnection()->lastInsertId(Constants::TABLE_FE_USERS);
+                    $queryBuilder->update(Constants::TABLE_OIDC)->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter(1, PDO::PARAM_INT)))->set('countuser', $userCount - 1)->execute();
+                } else {
+                    $site = GeneralUtility::getIndpEnv('TYPO3_REQUEST_HOST');
+                    $customer = new CustomerMo();
+                    $customer->submit_to_magento_team_autocreate_limit_exceeded($site, $typo3Version);
+                    echo "Auto create user limit has been exceeded!!! Please contact magentosupport@xecurify.com to upgrade to the Premium Plan.";
+                    exit;
+                }
+            }
+        } else {
+            $userExist = true;
+            $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(Constants::TABLE_FE_USERS);
+            $uid = $queryBuilder->select('uid')->from(Constants::TABLE_FE_USERS)->where($queryBuilder->expr()->eq('username', $queryBuilder->createNamedParameter($username, \PDO::PARAM_STR)))->execute()->fetch();
+            $uid = $uid['uid'];
+        }
+        MoUtilities::updateTable('usergroup', "", 'fe_users');
+        $mappedTypo3Group = Utilities::fetchFromTable(Constants::COLUMN_GROUP_DEFAULT, Constants::TABLE_OIDC);
+        if (empty($mappedTypo3Group)) {
+            echo "Group Mapping not found. Please contact your Administrator";
+            exit;
+        }
+        $mappedGroupUid = MoUtilities::fetchUidFromGroupName($mappedTypo3Group);
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(Constants::TABLE_FE_USERS);
+        $queryBuilder->update(Constants::TABLE_FE_USERS)->where($queryBuilder->expr()->eq('uid', $uid))
+            ->set('usergroup', $mappedGroupUid)->execute();
+        GeneralUtility::makeInstance(\TYPO3\CMS\Core\Cache\CacheManager::class)->flushCaches();
+        return true;
+    }
+
 }

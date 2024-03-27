@@ -1,4 +1,5 @@
 <?php
+
 /*
  * This file is part of the TYPO3 CMS project.
  *
@@ -12,14 +13,15 @@
  * The TYPO3 project - inspiring people to share!
  */
 
-// Exit early if php requirement is not satisfied.
-if (version_compare(PHP_VERSION, '7.0.0', '<')) {
-    die('This version of TYPO3 CMS requires PHP 7.0 or above');
-}
+use TYPO3\CMS\Core\Imaging\IconProvider\SvgIconProvider;
 
-// Set up the application for the Frontend
-call_user_func(function () {
-    $classLoader = require __DIR__.'/vendor/autoload.php';
-
-    (new \TYPO3\CMS\Frontend\Http\Application($classLoader))->run();
-});
+return [
+    'oauth-plugin-feoidc' => [
+        'provider' => SvgIconProvider::class,
+        'source' => 'EXT:oauth/Resources/Public/Icons/miniorange.png'
+    ],
+    'oauth-plugin-response' => [
+        'provider' => SvgIconProvider::class,
+        'source' => 'EXT:oauth/Resources/Public/Icons/miniorange.png'
+    ]
+];
