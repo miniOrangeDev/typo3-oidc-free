@@ -1,7 +1,7 @@
 <?php
 return [
     'ctrl' => [
-        'title' => 'LLL:EXT:EXT:oauth/Resources/Private/Language/locallang_db.xlf:tx_oauth_domain_model_feoidc',
+        'title' => 'LLL:EXT:oauth/Resources/Private/Language/locallang_db.xlf:tx_oauth_domain_model_feoidc',
         'label' => 'uid',
         'tstamp' => 'tstamp',
         'crdate' => 'crdate',
@@ -17,7 +17,7 @@ return [
             'endtime' => 'endtime',
         ],
         'searchFields' => '',
-        'iconfile' => 'EXT:EXT:oauth/Resources/Public/Icons/tx_oauth_domain_model_feoidc.gif'
+        'iconfile' => 'EXT:oauth/Resources/Public/Icons/tx_oauth_domain_model_feoidc.gif'
     ],
     'interface' => [
         'showRecordFieldList' => 'sys_language_uid, l10n_parent, l10n_diffsource, hidden, ',

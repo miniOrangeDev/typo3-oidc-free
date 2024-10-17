@@ -14,11 +14,9 @@ use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\PathUtility;
 
-const SEP = DIRECTORY_SEPARATOR;
-
-
 class Utilities
 {
+    protected const SEP = DIRECTORY_SEPARATOR;
 
     /**
      * This function checks if a value is set or
@@ -72,8 +70,8 @@ class Utilities
      */
     public static function getImageUrl($imgFileName)
     {
-        $imageDir = self::getResourceDir() . SEP . 'images' . SEP;
-        $iconDir = self::getExtensionRelativePath() . SEP . 'Resources' . SEP . 'Public' . SEP . 'Icons' . SEP;
+        $imageDir = self::getResourceDir() . self::SEP . 'images' . self::SEP;
+        $iconDir = self::getExtensionRelativePath() . self::SEP . 'Resources' . self::SEP . 'Public' . self::SEP . 'Icons' . self::SEP;
         return $iconDir . $imgFileName;
     }
 

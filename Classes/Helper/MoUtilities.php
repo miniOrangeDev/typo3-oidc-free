@@ -14,10 +14,10 @@ use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\PathUtility;
 
-const SEP = DIRECTORY_SEPARATOR;
-
 class MoUtilities
 {
+    const SEP = DIRECTORY_SEPARATOR;
+
     public static function getHelperDir()
     {
         global $sep;
@@ -106,9 +106,9 @@ class MoUtilities
     public static function getImageUrl($imgFileName)
     {
         error_log("getImageUrl");
-        $imageDir = self::getResourceDir() . SEP . 'images' . SEP;
+        $imageDir = self::getResourceDir() . self::SEP . 'images' . self::SEP;
         error_log("resDir : " . $imageDir);
-        $iconDir = self::getExtensionRelativePath() . SEP . 'Resources' . SEP . 'Public' . SEP . 'Icons' . SEP;
+        $iconDir = self::getExtensionRelativePath() . self::SEP . 'Resources' . self::SEP . 'Public' . self::SEP . 'Icons' . self::SEP;
         error_log("iconDir : " . print_r($iconDir, true));
         return $iconDir . $imgFileName;
     }

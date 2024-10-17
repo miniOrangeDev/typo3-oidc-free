@@ -75,7 +75,7 @@ call_user_func(
                         description = LLL:EXT:oauth/Resources/Private/Language/locallang_db.xlf:tx_oauth_feoidc.description
                         tt_content_defValues {
                             CType = list
-                            list_type = Feoidc
+                            list_type = oauth_feoidc
                         }
                     }
                     Responsekey {
@@ -84,7 +84,7 @@ call_user_func(
                         description = LLL:EXT:oauth/Resources/Private/Language/locallang_db.xlf:tx_oauth_response.description
                         tt_content_defValues {
                             CType = list
-                            list_type = Response
+                            list_type = oauth_response
                         }
                     }
                 }
