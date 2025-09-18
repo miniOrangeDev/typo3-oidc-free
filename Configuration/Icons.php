@@ -16,12 +16,8 @@
 use TYPO3\CMS\Core\Imaging\IconProvider\SvgIconProvider;
 
 return [
-    'oauth-plugin-feoidc' => [
+    'oauth-extension-icon' => [ 
         'provider' => SvgIconProvider::class,
-        'source' => 'EXT:oauth/Resources/Public/Icons/Extension.png'
+        'source' => 'EXT:oauth/Resources/Public/Icons/Extension.svg', 
     ],
-    'oauth-plugin-response' => [
-        'provider' => SvgIconProvider::class,
-        'source' => 'EXT:oauth/Resources/Public/Icons/Extension.png'
-    ]
 ];

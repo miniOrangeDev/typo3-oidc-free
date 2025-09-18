@@ -4,7 +4,7 @@ plugin.tx_oauth_feoidckey {
         templateRootPaths.1 = {$plugin.tx_oauth_feoidc.view.templateRootPath};
         partialRootPaths.0 = EXT::oauth/Resources/Private/Partials/
         partialRootPaths.1 = {$plugin.tx_oauth_feoidc.view.partialRootPath};
-        layoutRootPaths.0 = EX::oauth/Resources/Private/Layouts/
+        layoutRootPaths.0 = EXT::oauth/Resources/Private/Layouts/
         layoutRootPaths.1 = {$plugin.tx_oauth_feoidc.view.layoutRootPath}
     }
     persistence {

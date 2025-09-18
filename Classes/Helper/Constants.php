@@ -54,5 +54,9 @@ class Constants
     const DEFAULT_API_KEY = "fFd2XcvTGDemZvbw1bcUesNJWEqKbbUq";
 
     const AREA_OF_INTEREST = "TYPO3 OpenID Connect Client";
+    const TIMESTAMP = "timestamp";
+    const EXTENSION_KEY = "oauth";
+    const PLUGIN_METRICS_API = 'https://magento.shanekatear.in/plugin-portal/api/tracking';
+    const TOKEN             = 'token';
 
 }

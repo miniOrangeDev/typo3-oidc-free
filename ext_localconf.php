@@ -9,8 +9,7 @@ use TYPO3\CMS\Extbase\Utility\ExtensionUtility;
 use TYPO3\CMS\Core\Information\Typo3Version;
 
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['features']['security.backend.enforceContentSecurityPolicy'] = false;
-$GLOBALS['TYPO3_CONF_VARS']['FE']['cacheHash']['enforceValidation'] = false;
-$GLOBALS['TYPO3_CONF_VARS']['FE']['cacheHash']['excludedParameters'] = ['idp_name', 'RelayState', 'option', 'SAMLRequest', 'SAMLResponse', 'SigAlg', 'Signature', 'type', 'app', 'code', 'state'];
+$GLOBALS['TYPO3_CONF_VARS']['FE']['cacheHash']['excludedParameters'] = ['idp_name', 'RelayState', 'option', 'SAMLRequest', 'SAMLResponse', 'SigAlg', 'Signature', 'type', 'app', 'code', 'state', 'logintype'];
 
 call_user_func(
     function () {
@@ -66,31 +65,29 @@ call_user_func(
 
         // wizards
         \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addPageTSConfig(
-            'mod {
-            wizards.newContentElement.wizardItems.plugins {
+            "mod.wizards.newContentElement.wizardItems.plugins {
                 elements {
-                    Feoidckey {
-                        iconIdentifier = oauth-plugin-feoidc
-                        title = LLL:EXT:oauth/Resources/Private/Language/locallang_db.xlf:tx_oauth_feoidc.name
-                        description = LLL:EXT:oauth/Resources/Private/Language/locallang_db.xlf:tx_oauth_feoidc.description
+                    feoidc {
+                        iconIdentifier = oauth-extension-icon
+                        title = Feoidc
+                        description = For Sending Request
                         tt_content_defValues {
                             CType = list
-                            list_type = Feoidc
+                            list_type = {$extensionName}_feoidc
                         }
                     }
-                    Responsekey {
-                        iconIdentifier = oauth-plugin-response
-                        title = LLL:EXT:oauth/Resources/Private/Language/locallang_db.xlf:tx_oauth_response.name
-                        description = LLL:EXT:oauth/Resources/Private/Language/locallang_db.xlf:tx_oauth_response.description
+                    response {
+                        iconIdentifier = oauth-extension-icon
+                        title = Response
+                        description = For Handling Response 
                         tt_content_defValues {
                             CType = list
-                            list_type = Response
+                            list_type = {$extensionName}_response
                         }
                     }
                 }
                 show = *
-            }
-       }'
+            }"
         );
 
         $iconRegistry = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Imaging\IconRegistry::class);

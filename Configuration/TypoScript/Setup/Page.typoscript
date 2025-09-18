@@ -23,6 +23,6 @@ page {
    includeCSSLibs.bootstrap = https://netdna.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css
    includeCSSLibs.bootstrap.external = 1
    includeCSS {
-      file1 = EXT:oauth/Resources/Public/Css/main.css
+      file1 = EXT:oauth/Resources/Public/Css/oauth/main.css
    }
 }
