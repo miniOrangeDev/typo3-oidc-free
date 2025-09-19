@@ -152,7 +152,7 @@
       "sourceLanguage": "en",
       "state": "alpha",
       "targetVersion": "10.4.3-11.5.0",
-      "version": "1.1.0"
+      "version": "1.1.1"
     },
     "extensionKey": "oauth",
     "name": "OAuth/OIDC SSO",

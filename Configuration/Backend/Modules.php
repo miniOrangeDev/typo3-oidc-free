@@ -11,7 +11,7 @@ return [
         'position' => [],
         'access' => 'user,group',
         'workspaces' => 'live',
-        'iconIdentifier' => 'oauth-plugin-bekey',
+        'iconIdentifier' => 'oauth-extension-icon',
         'path' => 'module/tools/beoidckey',
         'labels' => 'LLL:EXT:oauth/Resources/Private/Language/locallang_bekey.xlf',
         'extensionName' => 'oauth',
