@@ -14,11 +14,14 @@ Installation Instructions:
 2. Manual Installation:
         - Unzip the plugin zip into the typo3conf/ext folder, rename the plugin folder to 'oauth' and activate the extension from the Extensions section in Typo3.
 
-3. After installing the extension, apply the database changes, if not applied automatically.
+3. After installing the extension, apply the database changes, if not applied automatically with command:
+```bash
+vendor/bin/typo3 extension:setup
+```
 
-4. Create the two standard pages as feoidc and response and add the feoidc and response pages, respectively, to them.
+5. Create the two standard pages as feoidc and response and add the feoidc and response pages, respectively, to them.
 
-5. Once the extension is installed successfully, navigate to the OpenID Connect Client tab of the plugin and fill in all the required fields as below:
+6. Once the extension is installed successfully, navigate to the OpenID Connect Client tab of the plugin and fill in all the required fields as below:
     - OAuth/ OpenID Provider Name: {Name of your OAuth/OIDC provider}
     - Application type: OAuth/OpenID Connect
     - Frontend Redirect/Callback Url : {Response Plugin Page URL which you created in earlier steps} (You will need to provide this URL to your
@@ -32,15 +35,15 @@ Installation Instructions:
     - User Info Endpoint : {You will get this endpoint from your OAuth/OIDC provider}
     - Set client credentials in : Header/Body
 
-6. Provide the redirect/callback URL in your OAuth/OIDC provider application by copying it from Frontend Redirect/Callback Url field in OpenID Connect Client tab.
+7. Provide the redirect/callback URL in your OAuth/OIDC provider application by copying it from Frontend Redirect/Callback Url field in OpenID Connect Client tab.
 
-7. Once you are done with the configurations on both ends (i.e., Typo3 and your OAuth/OIDC provider), click on the Test Configuration button in the OpenID Connect Client tab of the plugin and check if you are able to test it successfully.
+8. Once you are done with the configurations on both ends (i.e., Typo3 and your OAuth/OIDC provider), click on the Test Configuration button in the OpenID Connect Client tab of the plugin and check if you are able to test it successfully.
 
-8. Navigate to the Attribute Mapping tab and map the Username attribute to the OAuth/OIDC provider attribute using which you want to identify the users in Typo3 (you can find all the attributes received from your OAuth/OIDC provider in the test configuration).
+9. Navigate to the Attribute Mapping tab and map the Username attribute to the OAuth/OIDC provider attribute using which you want to identify the users in Typo3 (you can find all the attributes received from your OAuth/OIDC provider in the test configuration).
 
-9. Navigate to the Group Mapping tab of the plugin and save the Group Mapping for Frontend Users by selecting the Default Usergroup.
+10. Navigate to the Group Mapping tab of the plugin and save the Group Mapping for Frontend Users by selecting the Default Usergroup.
 
-10. Once you have done all the above steps, you are ready to test the SSO. You can use your Feoidc Page URL in order to initiate the SSO.
+11. Once you have done all the above steps, you are ready to test the SSO. You can use your Feoidc Page URL in order to initiate the SSO.
 
 You can choose the setup guide according to your OAuth/OIDC provider from below link:
     - https://plugins.miniorange.com/typo3-sso-single-sign-on-with-oauth-openid-connect-setup-guides
