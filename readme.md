@@ -7,7 +7,9 @@ Installation Instructions:
 
 1. Composer Installation:
     Run the below command to install the extension:
-        - composer require miniorange/miniorange-oidc
+```bash
+composer require miniorange/miniorange-oidc
+```
 
             OR
 
