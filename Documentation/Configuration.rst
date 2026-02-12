@@ -20,7 +20,7 @@ You must have atleast two pages before configuring the extension.
 Extension Configurations
 ************************
 
-* Once the extension is installed successfully, navigate to the OpenID Connect Client tab of the plugin and fill in all the required fields as below:
+* Once the extension is installed successfully, navigate to the "OpenID Connect Client" tab of the Backend module  and fill in all the required fields as below:
 	- OAuth/ OpenID Provider Name: {Name of your provider}
 	- Application type: OAuth/OpenID Connect
 	- Frontend Redirect/Callback Url : {Response Plugin Page URL which you created in step 4} (You will need to provide this URL to your
